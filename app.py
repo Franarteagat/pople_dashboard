@@ -1,166 +1,123 @@
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import streamlit as st
 
-# 1. Configuración de la página
+# Configuración de página
 st.set_page_config(
-    page_title="Pople - Dashboard de Gestión de Personas",
+    page_title="Pople | Tablero de Gestión de Personas",
     page_icon="👥",
-    layout="wide",
+    layout="wide"
 )
 
-# Título del Dashboard
-st.title("🚀 Pople - Gestión de Personas")
-st.markdown(
-    "Visualización estratégica de dotación, capacitaciones normativas, evaluaciones de desempeño y documentación laboral."
-)
+# Estilos CSS personalizados (Paleta Pople: Rosa Coral, Azul Marino y Gris Claro)
+st.markdown("""
+    <style>
+    .main {
+        background-color: #FAFAFA;
+    }
+    .stMetric {
+        background-color: #FFFFFF;
+        padding: 18px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+        border-left: 5px solid #E63946;
+    }
+    .metric-container {
+        display: flex;
+        justify-content: space-between;
+    }
+    div[data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Encabezado principal
+st.title("👥 Pople — Tablero de Control B2B")
+st.markdown("**Plataforma de Inteligencia en Gestión de Personas, Cumplimiento Normativo y Desarrollo Organizacional para PyMEs.**")
 st.markdown("---")
 
-
-# 2. Generación de datos simulados (reemplazar con la base de datos real de la PyME)
+# Carga de datos de prueba
 @st.cache_data
 def cargar_datos():
     np.random.seed(42)
-    n = 45  # Cantidad de trabajadores simulados
-
-    departamentos = ["Operaciones", "Ventas", "Administración", "TI", "Logística"]
+    n = 50
+    departamentos = ["Operaciones", "Ventas", "Tecnología", "Finanzas", "Logística"]
     estados_normativa = ["Completado", "En Curso", "Pendiente"]
     estados_doc = ["Al día", "Por Vencer", "Pendiente"]
-
+    
     data = {
         "ID": range(101, 101 + n),
-        "Trabajador": [f"Trabajador {i}" for i in range(1, n + 1)],
+        "Trabajador": [f"Colaborador {i}" for i in range(1, n + 1)],
         "Departamento": np.random.choice(departamentos, size=n),
-        "Capacitacion_Ley_Karin": np.random.choice(
-            estados_normativa, size=n, p=[0.7, 0.2, 0.1]
-        ),
-        "Capacitacion_Prevencion": np.random.choice(
-            estados_normativa, size=n, p=[0.6, 0.3, 0.1]
-        ),
-        "Evaluacion_Desempeno": np.random.uniform(2.5, 5.0, size=n).round(1),
-        "Documentacion_Personal": np.random.choice(
-            estados_doc, size=n, p=[0.8, 0.15, 0.05]
-        ),
+        "Capacitacion_Ley_Karin": np.random.choice(estados_normativa, size=n, p=[0.75, 0.18, 0.07]),
+        "Capacitacion_Prevencion": np.random.choice(estados_normativa, size=n, p=[0.65, 0.25, 0.10]),
+        "Evaluacion_Desempeno": np.random.uniform(3.0, 5.0, size=n).round(1),
+        "Documentacion_Personal": np.random.choice(estados_doc, size=n, p=[0.82, 0.12, 0.06])
     }
     return pd.DataFrame(data)
 
-
 df = cargar_datos()
 
-# 3. Barra lateral con filtros
-st.sidebar.header("🔍 Filtros de Búsqueda")
+# Filtros en la barra lateral
+st.sidebar.image("https://img.icons8.com/color/96/group-task.png", width=70)
+st.sidebar.title("Filtros Pople")
 depto_seleccionado = st.sidebar.multiselect(
-    "Seleccionar Departamento:",
+    "Filtrar por Área / Departamento:",
     options=df["Departamento"].unique(),
-    default=df["Departamento"].unique(),
+    default=df["Departamento"].unique()
 )
 
-# Filtrar DataFrame según selección
 df_filtrado = df[df["Departamento"].isin(depto_seleccionado)]
 
-# 4. Cálculo de Indicadores Clave (KPIs)
-total_trabajadores = len(df_filtrado)
-
-if total_trabajadores > 0:
-    pct_karin = (
-        df_filtrado["Capacitacion_Ley_Karin"] == "Completado"
-    ).mean() * 100
-    promedio_desempeno = df_filtrado["Evaluacion_Desempeno"].mean()
-    pct_doc_al_dia = (
-        df_filtrado["Documentacion_Personal"] == "Al día"
-    ).mean() * 100
-else:
-    pct_karin, promedio_desempeno, pct_doc_al_dia = 0, 0, 0
-
-# Visualización de KPIs en tarjetas
+# Métricas KPI Principales
 col1, col2, col3, col4 = st.columns(4)
 
-with col1:
-    st.metric(label="Total Trabajadores", value=f"{total_trabajadores}")
+total_colab = len(df_filtrado)
+pct_karin = (df_filtrado['Capacitacion_Ley_Karin'] == 'Completado').mean() * 100 if total_colab > 0 else 0
+prom_desempeno = df_filtrado['Evaluacion_Desempeno'].mean() if total_colab > 0 else 0
+pct_carpetas = (df_filtrado['Documentacion_Personal'] == 'Al día').mean() * 100 if total_colab > 0 else 0
 
-with col2:
-    st.metric(
-        label="Capacitación Ley Karin",
-        value=f"{pct_karin:.1f}%",
-        delta="Cumplimiento",
-    )
+col1.metric("Dotación Total", f"{total_colab} Colaboradores")
+col2.metric("Cumplimiento Ley Karin", f"{pct_karin:.1f}%")
+col3.metric("Promedio Desempeño", f"{prom_desempeno:.2f} / 5.0")
+col4.metric("Carpetas Auditadas Al Día", f"{pct_carpetas:.1f}%")
 
-with col3:
-    st.metric(
-        label="Evaluación Desempeño Promedio",
-        value=f"{promedio_desempeno:.2f} / 5.0",
-    )
+st.markdown("<br>", unsafe_allow_html=True)
 
-with col4:
-    st.metric(
-        label="Documentos Personales Al Día",
-        value=f"{pct_doc_al_dia:.1f}%",
-        delta_color="normal" if pct_doc_al_dia > 80 else "inverse",
-    )
-
-st.markdown("---")
-
-# 5. Gráficos Interactivos
+# Gráficos Visuales
 g_col1, g_col2 = st.columns(2)
 
 with g_col1:
-    st.subheader("🎓 Capacitaciones Normativas (Ley Karin por Área)")
-    fig_normativa = px.histogram(
-        df_filtrado,
-        x="Departamento",
-        color="Capacitacion_Ley_Karin",
+    st.subheader("📊 Cumplimiento Ley Karin por Departamento")
+    fig_karin = px.histogram(
+        df_filtrado, 
+        x="Departamento", 
+        color="Capacitacion_Ley_Karin", 
         barmode="group",
-        color_discrete_map={
-            "Completado": "#2ecc71",
-            "En Curso": "#f1c40f",
-            "Pendiente": "#e74c3c",
-        },
-        labels={"Capacitacion_Ley_Karin": "Estado Ley Karin"},
+        color_discrete_map={"Completado": "#1D3557", "En Curso": "#457B9D", "Pendiente": "#E63946"},
+        labels={"Capacitacion_Ley_Karin": "Estado Capacitación"}
     )
-    st.plotly_chart(fig_normativa, use_container_width=True)
+    fig_karin.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    st.plotly_chart(fig_karin, use_container_width=True)
 
 with g_col2:
-    st.subheader("📄 Estado de Documentación Personal (Contratos, Anexos, etc.)")
-    fig_doc = px.pie(
-        df_filtrado,
-        names="Documentacion_Personal",
-        color="Documentacion_Personal",
-        color_discrete_map={
-            "Al día": "#2ecc71",
-            "Por Vencer": "#f39c12",
-            "Pendiente": "#e74c3c",
-        },
-        hole=0.4,
-    )
-    st.plotly_chart(fig_doc, use_container_width=True)
-
-g_col3, g_col4 = st.columns(2)
-
-with g_col3:
-    st.subheader("📊 Distribución de Evaluaciones de Desempeño")
+    st.subheader("🎯 Distribución de Evaluaciones de Desempeño")
     fig_desempeno = px.box(
-        df_filtrado,
-        x="Departamento",
+        df_filtrado, 
+        x="Departamento", 
         y="Evaluacion_Desempeno",
-        points="all",
         color="Departamento",
-        labels={"Evaluacion_Desempeno": "Nota Desempeño (1-5)"},
+        color_discrete_sequence=["#E63946", "#1D3557", "#457B9D", "#A8DADC", "#F1FAEE"]
     )
+    fig_desempeno.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", showlegend=False)
     st.plotly_chart(fig_desempeno, use_container_width=True)
 
-with g_col4:
-    st.subheader("📋 Detalle de Registro de Trabajadores")
-    st.dataframe(
-        df_filtrado[
-            [
-                "Trabajador",
-                "Departamento",
-                "Capacitacion_Ley_Karin",
-                "Evaluacion_Desempeno",
-                "Documentacion_Personal",
-            ]
-        ],
-        use_container_width=True,
-        height=320,
-    )
+# Tabla de detalles
+st.markdown("---")
+st.subheader("📋 Registro Detallado de Colaboradores")
+st.dataframe(
+    df_filtrado[["ID", "Trabajador", "Departamento", "Capacitacion_Ley_Karin", "Documentacion_Personal", "Evaluacion_Desempeno"]],
+    use_container_width=True
+)
